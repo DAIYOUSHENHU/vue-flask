@@ -1,14 +1,18 @@
 <template>
   <div>
-    <h1>Mychess</h1>
+    <ChessBoard></ChessBoard>
     <button @click="getRandom">按钮</button>
     <h1>{{ randnum }}</h1>
   </div>
 </template>
 
 <script>
+import ChessBoard from '../components/ChessBoard'
 export default {
   name: 'Mychess',
+  components: {
+    ChessBoard
+  },
   data() {
     return {
       randnum: 0
@@ -16,7 +20,7 @@ export default {
   },
   methods: {
     getRandom() {
-      this.$axios.get('http://127.0.0.1:5000/mytest')
+      this.$axios.get('/mytest')
       .then(res => {
         this.randnum = res.data
       })
