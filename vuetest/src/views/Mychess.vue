@@ -22,7 +22,8 @@ export default {
     getRandom() {
       this.$axios.get('/mytest')
       .then(res => {
-        this.randnum = res.data
+        console.log(res);
+        /* this.randnum = res.data */
       })
     }
   },
