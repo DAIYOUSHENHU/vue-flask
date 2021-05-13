@@ -1,7 +1,7 @@
 <template>
   <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <img id="chesslogo" src="../assets/chess.jpg">
+    <HelloWorld msg="Enjoy Your Game!!!"/>
   </div>
 </template>
 
@@ -16,3 +16,10 @@ export default {
   }
 }
 </script>
+
+<style>
+  #chesslogo {
+    width: 150px;
+    height: 150px;
+  }
+</style>

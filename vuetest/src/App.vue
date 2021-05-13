@@ -1,9 +1,9 @@
 <template>
   <div id="app">
     <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link> |
-      <router-link to="/mychess">Chess</router-link>
+      <router-link to="/">首页</router-link> |
+      <router-link to="/register">注册</router-link> |
+      <router-link to="/mychess">棋盘</router-link>
     </div>
     <router-view/>
   </div>
