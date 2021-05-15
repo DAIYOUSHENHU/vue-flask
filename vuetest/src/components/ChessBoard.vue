@@ -2,7 +2,7 @@
   <div id="body">
     <h1>棋盘</h1>
     <div>
-      <audio id="music" src="../assets/long.mp3" autoplay loop></audio> 
+      <audio id="music" src="../assets/long.mp3" autoplay loop></audio>
     </div>
 
     <canvas
@@ -12,8 +12,12 @@
       @click="chessing($event)"
     ></canvas>
 
-    <div style="color:white">等待落子：{{chesscolor[step%2]}}</div>
-    
+    <div style="color: white">等待落子：{{ chesscolor[step % 2] }}</div>
+
+    <div>
+      <button id="regret" @click="regret">悔棋</button>
+      <button id="newgame" @click="newgame()">重新开始</button>
+    </div>
   </div>
 </template>
 
@@ -27,7 +31,14 @@ export default {
       chesscolor: ["black", "white"],
       step: 0,
       chessmap: [], //二维棋盘
-      username: this.$route.username
+      beforemap: [],
+      username: this.$route.query.username,
+      mode: [
+        [0, 1],
+        [1, 0],
+        [1, 1],
+        [1, -1],
+      ],
     };
   },
   methods: {
@@ -42,12 +53,39 @@ export default {
       }
       this.mcb.stroke();
     },
+    initchessmap() {
+      for (let i = 0; i < 15; i++) {
+        this.chessmap[i] = [];
+        for (let j = 0; j < 15; j++) {
+          this.chessmap[i][j] = 0;
+        }
+      }
+    },
 
-    drawchess(x, y, color) {
+    drawchess(mx, my, colornum) {
       //画棋子
+      this.painting(mx, my, colornum);
+
+      if (this.chessmap[mx][my] != 0) {
+        this.step++;
+        return;
+      }
+      this.doStore(this.username, mx, my, colornum + 1, this.step + 1);
+
+      this.chessmap[mx][my] = colornum + 1;
+
+      this.checkwin(mx, my, (this.step % 2) + 1, this.mode);
+
+      this.step++;
+    },
+
+    painting(mx, my, colornum) {
+      let color = this.chesscolor[colornum];
+      let lx = (+my + 1) * 30; //maplocating
+      let ly = (+mx + 1) * 30;
       this.mcb.fillStyle = color;
       this.mcb.beginPath();
-      this.mcb.arc(x, y, 15, 0, Math.PI * 2, false);
+      this.mcb.arc(lx, ly, 15, 0, Math.PI * 2, false);
       this.mcb.fill();
       this.mcb.stroke();
     },
@@ -57,56 +95,47 @@ export default {
       let ly = Math.floor((e.offsetY + 15) / 30) * 30;
       let mx = ly / 30 - 1; //maplocating
       let my = lx / 30 - 1;
-      let mode = [
-        [0, 1],
-        [1, 0],
-        [1, 1],
-        [1, -1],
-      ];
+
       if (lx == 0 || lx == 480 || ly == 0 || ly == 480) {
         return;
       }
 
-      if (this.chessmap[ly / 30 - 1][lx / 30 - 1] != 0) {
+      if (this.chessmap[mx][my] != 0) {
         return;
       }
 
-      this.drawchess(lx, ly, this.chesscolor[this.step % 2]);
-      this.chessmap[mx][my] = (this.step % 2) + 1;
-
-      this.checkwin(mx, my, (this.step % 2) + 1, mode[0]);
-      this.checkwin(mx, my, (this.step % 2) + 1, mode[1]);
-      this.checkwin(mx, my, (this.step % 2) + 1, mode[2]);
-      this.checkwin(mx, my, (this.step % 2) + 1, mode[3]);
-
-      this.step++;
+      this.drawchess(mx, my, this.step % 2);
     },
 
     checkwin(x, y, cn, mode) {
-      let count = 1;
-      for (let i = 1; i < 5; i++) {
-        if (this.chessmap[x + i * mode[0]]) {
-          if (this.chessmap[x + i * mode[0]][y + i * mode[1]] == cn) {
-            count++;
-          } else {
-            break;
+      for (let k = 0; k < 4; k++) {
+        let count = 1;
+        for (let i = 1; i < 5; i++) {
+          if (this.chessmap[x + i * mode[k][0]]) {
+            if (this.chessmap[x + i * mode[k][0]][y + i * mode[k][1]] == cn) {
+              count++;
+            } else {
+              break;
+            }
           }
         }
-      }
 
-      for (let i = 1; i < 5; i++) {
-        if (this.chessmap[x - i * mode[0]]) {
-          if (this.chessmap[x - i * mode[0]][y - i * mode[1]] == cn) {
-            count++;
-          } else {
-            break;
+        for (let i = 1; i < 5; i++) {
+          if (this.chessmap[x - i * mode[k][0]]) {
+            if (this.chessmap[x - i * mode[k][0]][y - i * mode[k][1]] == cn) {
+              count++;
+            } else {
+              break;
+            }
           }
         }
+
+        if (count >= 5) alert(this.chesscolor[cn - 1] + " wins this round!");
+        
       }
-      if (count >= 5) alert(this.chesscolor[cn - 1] + " wins this round!");
     },
 
-    doStore(username,mapx,mapy,color) {
+    doStore(username, mapx, mapy, color, step) {
       this.$axios
         .post(
           "/api/chessing",
@@ -114,24 +143,67 @@ export default {
             username: username,
             mapx: mapx,
             mapy: mapy,
-            color: color
+            color: color,
+            step: step,
+          })
+        )
+        .then((res) => {});
+    },
+
+    drawbeforemap(username) {
+      this.$axios
+        .post(
+          "/api/getmap",
+          qs.stringify({
+            username: username,
           })
         )
         .then((res) => {
-          console.log(res);
+          res = res.data.res;
+          if (res.length > 0) {
+            for (let i = 0; i < res.length; i++) {
+              this.chessmap[res[i][0]][res[i][1]] = res[i][2];
+              this.drawchess(res[i][0], res[i][1], this.step % 2);
+            }
+          }
         });
-    }
+    },
+
+    regret() {
+      this.$axios
+        .post(
+          "/api/regret",
+          qs.stringify({
+            username: this.username,
+            step: this.step,
+          })
+        )
+        .then((res) => {
+          if (res.data.msg == "regret") {
+            this.$router.go(0);
+          }
+        });
+    },
+
+    newgame() {
+      this.$axios
+        .post(
+          "/api/newgame",
+          qs.stringify({
+            username: this.username,
+          })
+        )
+        .then((res) => {
+          if (res.data.msg == "newgame") {
+            this.$router.go(0);
+          }
+        });
+    },
   },
   mounted() {
     this.initCanvas();
-    for (let i = 0; i < 15; i++) {
-      this.chessmap[i] = [];
-      for (let j = 0; j < 15; j++) {
-        this.chessmap[i][j] = 0;
-      }
-    }
-
-    console.log(this.username);
+    this.initchessmap();
+    this.drawbeforemap(this.username);
   },
 };
 </script>
@@ -139,6 +211,11 @@ export default {
 <style>
 #body {
   background-image: url(../assets/bg.gif);
+}
+
+#regret {
+  margin-right: 200px;
+  margin-bottom: 50px;
 }
 
 #music {

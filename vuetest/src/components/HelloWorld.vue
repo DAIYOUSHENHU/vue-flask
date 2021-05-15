@@ -13,7 +13,7 @@
       </div>
 
       <div>
-        <button @click="doLogin">登录</button>
+        <button id="login" @click="doLogin">登录</button>
       </div>
     </div>
   </div>
@@ -40,10 +40,13 @@ export default {
           })
         )
         .then((res) => {
-          if(res.data.msg == 'success') {
-            this.$router.push('/mychess?username=' + this.username)
-          }else {
-            alert('账号或密码错误！')
+          if (res.data.msg == "success") {
+            this.$router.push({
+              path: "/mychess",
+              query: { username: this.username },
+            });
+          } else {
+            alert("账号或密码错误！");
           }
         });
     },
@@ -56,6 +59,10 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+
+#login {
+  margin-top: 10px;
+}
 h3 {
   margin: 40px 0 0;
 }

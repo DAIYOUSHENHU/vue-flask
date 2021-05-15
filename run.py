@@ -18,10 +18,10 @@ DATABASE = './path/to/database.db'
 #   conn = sqlite3.connect(DATABASE)
 #   c = conn.cursor()
 #   # 创建表
-  # c.execute('''DROP TABLE IF EXISTS user''')
-  # c.execute('''DROP TABLE IF EXISTS chessmap''')
-  # c.execute('''CREATE TABLE user (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)''')
-  # c.execute('''CREATE TABLE chessmap (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT,  mapx TEXT, mapy TEXT, color TEXT)''')
+#   c.execute('''DROP TABLE IF EXISTS user''')
+#   c.execute('''DROP TABLE IF EXISTS chessmap''')
+#   c.execute('''CREATE TABLE user (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)''')
+#   c.execute('''CREATE TABLE chessmap (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT,  mapx TEXT, mapy TEXT, color TEXT, step INTEGER)''')
   # 数据
   # 格式：用户名,邮箱
   # purchases = [('admin', 'admin'),
@@ -33,7 +33,7 @@ DATABASE = './path/to/database.db'
   # c.executemany('INSERT INTO user(username, password) VALUES (?,?)', purchases)
 
   # conn.commit()
-  # 关闭
+  # # 关闭
   # conn.close()
 
 def get_db():
@@ -49,7 +49,7 @@ def query_db(query, args=(), one=False):
   db.close()
   return (rv[0] if rv else None) if one else rv
 
-def insert_db(insert, args=()):
+def op_db(insert, args=()):
   db = get_db()
   db.execute(insert, args)
   db.commit()
@@ -72,6 +72,8 @@ def user(username):
     'name': res[0][1],
     'email': res[0][2]
   } 
+
+  # 用户登录
 @app.route("/login", methods=['POST'])
 def login():
   username = request.form['username']
@@ -86,6 +88,7 @@ def login():
       'msg': 'false'
     }
 
+# 用户注册
 @app.route("/register", methods=['POST'])
 def register():
   username = request.form['username']
@@ -96,7 +99,7 @@ def register():
       'msg': 'exist'
     }
   else:
-    insert_db("INSERT INTO user(username, password) VALUES (?,?)",(username, password))
+    op_db("INSERT INTO user(username, password) VALUES (?,?)",(username, password))
     return {
       'msg': 'success',
     }
@@ -107,7 +110,8 @@ def chessing():
   mapx = request.form['mapx']
   mapy = request.form['mapy']
   color = request.form['color']
-  insert_db("INSERT INTO chessmap(username, mapx, mapy, color) VALUES (?,?,?,?)",(username, mapx, mapy, color))
+  step = int(request.form['step']) 
+  op_db("INSERT INTO chessmap(username, mapx, mapy, color, step) VALUES (?,?,?,?,?)",(username, mapx, mapy, color, step))
   return {
     'username': username,
     'mapx': mapx,
@@ -115,26 +119,39 @@ def chessing():
     'color': color,
     'msg': 'success',
   }
-  
+
+
+  # 获取原数据
 @app.route("/getmap", methods=['POST'])
 def getmap():
   username = request.form['username']
-  res = query_db("SELECT * FROM chessmap WHERE username = ?",(username,))
-  return "<br>".join(["{0}: {1}: {2}".format(user[2], user[3], user[4]) for user in res])
+  resdb = query_db("SELECT * FROM chessmap WHERE username = ?",(username,))
+  res = []
+  for item in resdb:
+    res.append([item[2],item[3],item[4],item[5]])
+  
+  return {
+    'res': res
+  }
+  
+  # 悔棋
+@app.route("/regret", methods=['POST'])
+def regret():
+  username = request.form['username']
+  step = request.form['step']
+  op_db("DELETE FROM chessmap WHERE username = ? AND step = ?",(username,step,))
+  return {
+    'msg': 'regret'
+  }
 
-  # return {
-  #   'res': res,
-  #   'msg': 'success'
-  # }  
-
-@app.route('/mytest')
-def test(): 
-    name = 'chenxin'
-    return {
-        'name': name,
-        'randnum1': str(random.randint(1,100)),
-        'randnum2': str(random.randint(101,500))    
-    }
+# 重新开始 
+@app.route("/newgame", methods=['POST'])
+def newgame():
+  username = request.form['username']
+  op_db("DELETE FROM chessmap WHERE username = ?",(username,))
+  return {
+    'msg': 'newgame'
+  }
 
 
 if __name__ == '__main__':
