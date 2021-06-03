@@ -4,7 +4,11 @@ from flask import Flask, request, jsonify
 from flask import render_template
 import sqlite3
 from flask import g
-import random
+import wave
+import requests
+import time
+import base64
+from pyaudio import PyAudio, paInt16
 
 app = Flask(__name__,
             static_folder='./vuetest/dist/static',
@@ -157,9 +161,129 @@ def chessing():
     #   'msg': 'success',
     # }
 
-    # 获取原数据
+@app.route("/speak")
+def speak():
+    flag = False
+    num = []
+    change =  {
+        '零': '0',
+        '一': '1',
+        '二': '2',
+        '三': '3',
+        '四': '4',
+        '五': '5',
+        '六': '6',
+        '七': '7',
+        '八': '8',
+        '九': '9',
+        '十': '10',
+    }
+    devpid = 1536
+    my_record()
+    TOKEN = getToken(HOST)
+    speech = get_audio(FILEPATH)
+    result = speech2text(speech, TOKEN, devpid)
+    res = ''
+    for i in result:
+        if i == "第":
+            flag = True
+            continue
+        if i == '行' or i == '列':
+            flag = False
+            if len(res) > 2:
+                res = res[0] + res[-1] 
+            num.append(res)
+            res = ''  
+        if flag:
+            res += change[i]           
+    if num[0] and num[1] and int(num[0])<=15 and int(num[1])<=15:
+        return {
+            'msg': num
+        }
+    else:
+        return{
+            'msg': 'faild'
+        }    
+
+framerate = 16000  # 采样率
+num_samples = 2000  # 采样点
+channels = 1  # 声道
+sampwidth = 2  # 采样宽度2bytes
+FILEPATH = 'speech.wav'
+
+base_url = "https://openapi.baidu.com/oauth/2.0/token?grant_type=client_credentials&client_id=%s&client_secret=%s"
+APIKey = "L77rFuX5Mv1GNxK8XQFnz7gA"
+SecretKey = "eBLb3u9RVNG4EYvjIDqXrLGDQ1B8VTKh"
+
+HOST = base_url % (APIKey, SecretKey)
 
 
+def getToken(host):
+    res = requests.post(host)
+    return res.json()['access_token']
+
+
+def save_wave_file(filepath, data):
+    wf = wave.open(filepath, 'wb')
+    wf.setnchannels(channels)
+    wf.setsampwidth(sampwidth)
+    wf.setframerate(framerate)
+    wf.writeframes(b''.join(data))
+    wf.close()
+
+
+def my_record():
+    pa = PyAudio()
+    stream = pa.open(format=paInt16, channels=channels,
+                     rate=framerate, input=True, frames_per_buffer=num_samples)
+    my_buf = []
+    # 录音
+    t = time.time()
+
+    while time.time() < t + 4:  # 秒
+        string_audio_data = stream.read(num_samples)
+        my_buf.append(string_audio_data)
+
+    save_wave_file(FILEPATH, my_buf)
+    stream.close()
+
+
+def get_audio(file):
+    with open(file, 'rb') as f:
+        data = f.read()
+    return data
+
+
+def speech2text(speech_data, token, dev_pid=1537):
+    FORMAT = 'wav'
+    RATE = '16000'
+    CHANNEL = 1
+    CUID = '*******'
+    SPEECH = base64.b64encode(speech_data).decode('utf-8')
+
+    data = {
+        'format': FORMAT,
+        'rate': RATE,
+        'channel': CHANNEL,
+        'cuid': CUID,
+        'len': len(speech_data),
+        'speech': SPEECH,
+        'token': token,
+        'dev_pid': dev_pid
+    }
+    url = 'https://vop.baidu.com/server_api'
+    headers = {'Content-Type': 'application/json'}
+    
+    # 识别  
+    r = requests.post(url, json=data, headers=headers)
+    Result = r.json()
+    if 'result' in Result:
+        return Result['result'][0]
+    else:
+        return Result
+
+
+# 获取原数据
 @app.route("/getmap", methods=['POST'])
 def getmap():
     username = request.form['username']
@@ -185,8 +309,6 @@ def regret():
     }
 
 # 重新开始
-
-
 @app.route("/newgame", methods=['POST'])
 def newgame():
     username = request.form['username']

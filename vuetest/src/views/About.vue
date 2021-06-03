@@ -32,7 +32,7 @@ export default {
     doRegister() {
       this.$axios
         .post(
-          "/api/register",
+          "/register",
           qs.stringify({
             username: this.username,
             password: this.password,
@@ -44,6 +44,9 @@ export default {
           }else {
             alert('注册成功！请登录')
           }
+        })
+        .catch(() => {
+          alert('注册失败！请重试')
         });
     },
   },

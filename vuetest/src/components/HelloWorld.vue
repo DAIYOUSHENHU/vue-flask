@@ -48,6 +48,9 @@ export default {
           } else {
             alert("账号或密码错误！");
           }
+        })
+        .catch(() => {
+          alert("账号或密码错误！")
         });
     },
   },

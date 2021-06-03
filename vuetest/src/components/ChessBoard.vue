@@ -16,6 +16,7 @@
 
     <div>
       <button id="regret" @click="regret">悔棋</button>
+      <button id="speak" @click="speak">语音输入</button>
       <button id="newgame" @click="newgame()">重新开始</button>
     </div>
   </div>
@@ -70,6 +71,7 @@ export default {
         this.step++;
         return;
       }
+
       this.doStore(this.username, mx, my, colornum + 1, this.step + 1);
 
       this.chessmap[mx][my] = colornum + 1;
@@ -106,7 +108,27 @@ export default {
 
       this.drawchess(mx, my, this.step % 2);
     },
-    
+
+    speak() {
+      this.$axios
+        .get("/speak")
+        .then((res) => {
+          res = res.data.msg;
+          if (res == "faild") {
+            alert("语音输入失败，请重新输入！");
+          } else {
+            if (this.chessmap[res[0] - 1][res[1] - 1] != 0) {
+              alert("该位置已有棋子，请重新输入！")
+              return;
+            }
+            this.drawchess(res[0] - 1, res[1] - 1, this.step % 2);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+          alert("语音输入失败，请重新输入！");
+        });
+    },
 
     // checkwin(x, y, cn, mode) {
     //   for (let k = 0; k < 4; k++) {
@@ -131,9 +153,9 @@ export default {
     //       }
     //     }
 
-        // if (count >= 5) alert(this.chesscolor[cn - 1] + " wins this round!");
-        
-      // }
+    // if (count >= 5) alert(this.chesscolor[cn - 1] + " wins this round!");
+
+    // }
     // },
 
     doStore(username, mapx, mapy, color, step) {
@@ -149,9 +171,9 @@ export default {
           })
         )
         .then((res) => {
-          res = res.data.msg
-          if(res != '') {
-            alert(this.chesscolor[res - 1] + " wins this round!")
+          res = res.data.msg;
+          if (res != "") {
+            alert(this.chesscolor[res - 1] + " wins this round!");
           }
         });
     },
@@ -220,8 +242,15 @@ export default {
 }
 
 #regret {
-  margin-right: 200px;
-  margin-bottom: 50px;
+  margin-top: 20px;
+  margin-right: 100px;
+  margin-bottom: 30px;
+}
+
+#speak {
+  margin-top: 20px;
+  margin-right: 100px;
+  margin-bottom: 30px;
 }
 
 #music {
