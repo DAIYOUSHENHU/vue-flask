@@ -74,7 +74,7 @@ export default {
 
       this.chessmap[mx][my] = colornum + 1;
 
-      this.checkwin(mx, my, (this.step % 2) + 1, this.mode);
+      // this.checkwin(mx, my, (this.step % 2) + 1, this.mode);
 
       this.step++;
     },
@@ -106,39 +106,40 @@ export default {
 
       this.drawchess(mx, my, this.step % 2);
     },
+    
 
-    checkwin(x, y, cn, mode) {
-      for (let k = 0; k < 4; k++) {
-        let count = 1;
-        for (let i = 1; i < 5; i++) {
-          if (this.chessmap[x + i * mode[k][0]]) {
-            if (this.chessmap[x + i * mode[k][0]][y + i * mode[k][1]] == cn) {
-              count++;
-            } else {
-              break;
-            }
-          }
-        }
+    // checkwin(x, y, cn, mode) {
+    //   for (let k = 0; k < 4; k++) {
+    //     let count = 1;
+    //     for (let i = 1; i < 5; i++) {
+    //       if (this.chessmap[x + i * mode[k][0]]) {
+    //         if (this.chessmap[x + i * mode[k][0]][y + i * mode[k][1]] == cn) {
+    //           count++;
+    //         } else {
+    //           break;
+    //         }
+    //       }
+    //     }
 
-        for (let i = 1; i < 5; i++) {
-          if (this.chessmap[x - i * mode[k][0]]) {
-            if (this.chessmap[x - i * mode[k][0]][y - i * mode[k][1]] == cn) {
-              count++;
-            } else {
-              break;
-            }
-          }
-        }
+    //     for (let i = 1; i < 5; i++) {
+    //       if (this.chessmap[x - i * mode[k][0]]) {
+    //         if (this.chessmap[x - i * mode[k][0]][y - i * mode[k][1]] == cn) {
+    //           count++;
+    //         } else {
+    //           break;
+    //         }
+    //       }
+    //     }
 
-        if (count >= 5) alert(this.chesscolor[cn - 1] + " wins this round!");
+        // if (count >= 5) alert(this.chesscolor[cn - 1] + " wins this round!");
         
-      }
-    },
+      // }
+    // },
 
     doStore(username, mapx, mapy, color, step) {
       this.$axios
         .post(
-          "/api/chessing",
+          "/chessing",
           qs.stringify({
             username: username,
             mapx: mapx,
@@ -147,13 +148,18 @@ export default {
             step: step,
           })
         )
-        .then((res) => {});
+        .then((res) => {
+          res = res.data.msg
+          if(res != '') {
+            alert(this.chesscolor[res - 1] + " wins this round!")
+          }
+        });
     },
 
     drawbeforemap(username) {
       this.$axios
         .post(
-          "/api/getmap",
+          "/getmap",
           qs.stringify({
             username: username,
           })
@@ -172,7 +178,7 @@ export default {
     regret() {
       this.$axios
         .post(
-          "/api/regret",
+          "/regret",
           qs.stringify({
             username: this.username,
             step: this.step,
@@ -188,7 +194,7 @@ export default {
     newgame() {
       this.$axios
         .post(
-          "/api/newgame",
+          "/newgame",
           qs.stringify({
             username: this.username,
           })

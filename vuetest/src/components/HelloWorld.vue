@@ -33,7 +33,7 @@ export default {
     doLogin() {
       this.$axios
         .post(
-          "/api/login",
+          "/login",
           qs.stringify({
             username: this.username,
             password: this.password,
